@@ -296,9 +296,10 @@ static class Launcher
         }
     }
 
-    internal static void Watch()
+    internal static void Watch(Action<string> reportStatus)
     {
         Log("Watcher started. Game priority left unchanged.");
+        reportStatus("Waiting for Ghost Recon Wildlands to start...");
         DateTime start = DateTime.Now;
         HashSet<int> seenPids = new HashSet<int>();
         DateTime? firstDetection = null;
@@ -315,6 +316,7 @@ static class Launcher
                     (now - start).TotalSeconds >= MaxWaitForGameSeconds)
                 {
                     Log("GRW.exe not detected after " + MaxWaitForGameSeconds + " seconds; giving up.");
+                    reportStatus("Ghost Recon Wildlands did not start. The watcher is closing.");
                     return;
                 }
 
@@ -324,6 +326,7 @@ static class Launcher
                     (now - lastSeen.Value).TotalSeconds >= GraceAfterCloseSeconds)
                 {
                     Log("GRW.exe gone for " + GraceAfterCloseSeconds + " seconds; game considered closed.");
+                    reportStatus("Ghost Recon Wildlands has closed. The watcher is stopping.");
                     return;
                 }
 
@@ -334,7 +337,13 @@ static class Launcher
                         if (firstDetection == null) firstDetection = now;
                         lastNewProcess = now;
                         Log("New GRW.exe instance (PID " + p.Id + "). Enabling EcoQoS.");
-                        if (SetEcoQoS(p, true)) Log("EcoQoS enabled for PID " + p.Id + ".");
+                        if (SetEcoQoS(p, true))
+                        {
+                            Log("EcoQoS enabled for PID " + p.Id + ".");
+                            reportStatus("Ghost Recon Wildlands is running.\r\nEfficiency Mode is active.");
+                        }
+                        else
+                            reportStatus("Ghost Recon Wildlands is running, but Efficiency Mode could not be enabled. Check the log.");
                     }
                 }
 
@@ -344,12 +353,14 @@ static class Launcher
                     {
                         Log("Maximum watch time reached; disabling EcoQoS.");
                         DisableAll(processes);
+                        reportStatus("The monitoring time limit was reached. Windows is managing performance again.");
                         return;
                     }
                     if (processes.Length > 0 && (now - lastNewProcess.Value).TotalSeconds >= RestoreDelaySeconds)
                     {
                         Log(RestoreDelaySeconds + " seconds since the last new instance; disabling EcoQoS.");
                         DisableAll(processes);
+                        reportStatus("Efficiency Mode has ended. Windows is managing performance again.");
                         return;
                     }
                 }
@@ -366,6 +377,7 @@ static class Launcher
 class WatcherTaskbarForm : Form
 {
     bool watcherStopped;
+    readonly Label statusLabel = new Label();
 
     public WatcherTaskbarForm()
     {
@@ -373,16 +385,37 @@ class WatcherTaskbarForm : Form
         ShowInTaskbar = true;
         ShowIcon = true;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+        ClientSize = new Size(420, 130);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
+        MinimizeBox = true;
+        StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Minimized;
+
+        Label titleLabel = new Label();
+        titleLabel.Text = Program.AppName;
+        titleLabel.Font = new Font(Font, FontStyle.Bold);
+        titleLabel.SetBounds(16, 16, 385, 24);
+
+        statusLabel.Text = "Starting Ghost Recon Wildlands...";
+        statusLabel.SetBounds(16, 50, 385, 64);
+
+        Controls.Add(titleLabel);
+        Controls.Add(statusLabel);
         Shown += StartWatcher;
-        Activated += MinimizeWhenActivated;
         FormClosing += HandleFormClosing;
     }
 
-    void MinimizeWhenActivated(object sender, EventArgs e)
+    void UpdateStatus(string message)
     {
-        if (WindowState != FormWindowState.Minimized)
-            WindowState = FormWindowState.Minimized;
+        if (IsDisposed || !IsHandleCreated) return;
+        try
+        {
+            if (InvokeRequired)
+                BeginInvoke((MethodInvoker)delegate { statusLabel.Text = message; });
+            else statusLabel.Text = message;
+        }
+        catch (InvalidOperationException) { }
     }
 
     void StartWatcher(object sender, EventArgs e)
@@ -394,7 +427,7 @@ class WatcherTaskbarForm : Form
 
     void WatchInBackground()
     {
-        try { Launcher.Watch(); }
+        try { Launcher.Watch(UpdateStatus); }
         catch (Exception ex) { Launcher.Log("Unexpected error: " + ex.Message); }
         finally
         {
@@ -413,7 +446,10 @@ class WatcherTaskbarForm : Form
     void HandleFormClosing(object sender, FormClosingEventArgs e)
     {
         if (!watcherStopped && e.CloseReason == CloseReason.UserClosing)
+        {
             e.Cancel = true;
+            WindowState = FormWindowState.Minimized;
+        }
     }
 }
 

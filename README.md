@@ -14,7 +14,7 @@ A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and ap
 - **Restores normal behavior** 120 seconds after the last new instance.
 - **Exits on its own** 15 seconds after the game is closed, or after 5 minutes if the game never starts.
 - **Never changes process priority.**
-- **Taskbar status**: its icon stays in the taskbar while the game watcher is active, then disappears when it exits.
+- **Taskbar status**: its icon stays in the taskbar while the game watcher is active. Click it to see whether the game is starting, running with Efficiency Mode active, or has closed.
 - **No administrator rights** needed, to install or to run.
 
 ## Requirements
