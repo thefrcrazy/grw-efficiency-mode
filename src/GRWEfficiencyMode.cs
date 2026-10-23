@@ -3,7 +3,7 @@
 // One executable, two modes:
 //   - Setup mode  : when the file name contains "Setup" (the downloaded file).
 //                   Installs the app, creates the shortcuts, then exits.
-//   - App mode    : the installed "GRW Efficiency Mode.exe".
+//   - App mode    : the installed "GRW-Efficiency-Mode.exe".
 //                   Launches Ghost Recon Wildlands (Steam or Ubisoft Connect,
 //                   auto-detected), enables Windows Efficiency Mode (EcoQoS)
 //                   on GRW.exe during startup, then gives control back to
@@ -38,6 +38,9 @@ using Microsoft.Win32;
 static class Program
 {
     public const string AppName = "GRW Efficiency Mode";
+    public const string InstalledExeName = "GRW-Efficiency-Mode.exe";
+    public const string InstalledProcessName = "GRW-Efficiency-Mode";
+    public const string InstalledIconName = "GRW-Efficiency-Mode.ico";
     public const string SteamAppId = "460930";
     public const string UbisoftId = "1771";
 
@@ -431,16 +434,22 @@ static class Setup
     static void Install(string dir, bool desktopShortcut)
     {
         Directory.CreateDirectory(dir);
-        string target = Path.Combine(dir, Program.AppName + ".exe");
+        string target = Path.Combine(dir, Program.InstalledExeName);
 
         // Stop a running copy so the .exe can be replaced
-        foreach (Process p in Process.GetProcessesByName(Program.AppName))
+        string[] processNames = { Program.InstalledProcessName, Program.AppName };
+        foreach (string processName in processNames)
         {
-            try { p.Kill(); p.WaitForExit(3000); } catch { }
-            p.Dispose();
+            foreach (Process p in Process.GetProcessesByName(processName))
+            {
+                try { p.Kill(); p.WaitForExit(3000); } catch { }
+                p.Dispose();
+            }
         }
 
         File.Copy(Application.ExecutablePath, target, true);
+        DeleteIfExists(Path.Combine(dir, Program.AppName + ".exe"));
+        DeleteIfExists(Path.Combine(dir, "GRW Efficiency Mode.ico"));
         // Drop the "downloaded from the Internet" mark copied along with the file
         DeleteFile(target + ":Zone.Identifier");
 
@@ -448,18 +457,20 @@ static class Setup
         string gameExe = Game.FindExecutable();
         if (gameExe != null)
         {
-            string ico = Path.Combine(dir, "GRW Efficiency Mode.ico");
+            string ico = Path.Combine(dir, Program.InstalledIconName);
             WriteGameIcon(gameExe, ico);
             UpdateExecutableIcon(target, ico);
             iconLocation = ico + ",0";
         }
 
         CreateShortcut(Path.Combine(dir, Program.AppName + ".lnk"), target, dir, iconLocation, null);
+        string desktopShortcutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+            Program.AppName + ".lnk");
         if (desktopShortcut)
         {
-            CreateShortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-                Program.AppName + ".lnk"), target, dir, iconLocation, null);
+            CreateShortcut(desktopShortcutPath, target, dir, iconLocation, null);
         }
+        else DeleteIfExists(desktopShortcutPath);
 
         string startMenuDir = StartMenuDirectory();
         Directory.CreateDirectory(startMenuDir);
@@ -674,10 +685,12 @@ static class Setup
                 "GRW-Efficiency-Mode");
             if (Directory.Exists(logDir)) Directory.Delete(logDir, true);
 
-            string exePath = Path.Combine(installDir, Program.AppName + ".exe");
+            string exePath = Path.Combine(installDir, Program.InstalledExeName);
             string shortcutPath = Path.Combine(installDir, Program.AppName + ".lnk");
-            string icoPath = Path.Combine(installDir, "GRW Efficiency Mode.ico");
-            if (!ScheduleUninstallCleanup(exePath, shortcutPath, icoPath, installDir))
+            if (!ScheduleUninstallCleanup(exePath, shortcutPath,
+                Path.Combine(installDir, Program.InstalledIconName),
+                Path.Combine(installDir, Program.AppName + ".exe"),
+                Path.Combine(installDir, "GRW Efficiency Mode.ico"), installDir))
                 throw new IOException("Windows could not schedule the installed files for deletion.");
 
             MessageBox.Show("GRW Efficiency Mode has been uninstalled.",
@@ -695,13 +708,16 @@ static class Setup
         if (File.Exists(path)) File.Delete(path);
     }
 
-    static bool ScheduleUninstallCleanup(string exePath, string shortcutPath, string icoPath, string installDir)
+    static bool ScheduleUninstallCleanup(string exePath, string shortcutPath, string icoPath,
+        string legacyExePath, string legacyIcoPath, string installDir)
     {
         try
         {
             string command = "/c ping 127.0.0.1 -n 2 >nul & del /f /q \"" + exePath +
                 "\" >nul 2>&1 & del /f /q \"" + shortcutPath +
                 "\" >nul 2>&1 & del /f /q \"" + icoPath +
+                "\" >nul 2>&1 & del /f /q \"" + legacyExePath +
+                "\" >nul 2>&1 & del /f /q \"" + legacyIcoPath +
                 "\" >nul 2>&1 & rmdir \"" + installDir + "\" >nul 2>&1";
             ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", command);
             psi.CreateNoWindow = true;
@@ -767,7 +783,8 @@ class SetupForm : Form
 
         btnUninstall.Text = "Uninstall";
         btnUninstall.SetBounds(15, 152, 85, 28);
-        btnUninstall.Visible = File.Exists(Path.Combine(defaultDir, Program.AppName + ".exe"));
+        btnUninstall.Visible = File.Exists(Path.Combine(defaultDir, Program.InstalledExeName)) ||
+            File.Exists(Path.Combine(defaultDir, Program.AppName + ".exe"));
         btnUninstall.DialogResult = DialogResult.Yes;
 
         Button btnCancel = new Button();

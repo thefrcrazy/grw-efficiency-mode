@@ -51,7 +51,7 @@ Once installed, the app no longer carries the "downloaded from the Internet" mar
 
 ## How it works
 
-The file name decides the mode. If it contains `Setup`, the program installs itself: it copies itself as `GRW Efficiency Mode.exe` and creates the shortcuts. Any other name launches the game and applies Efficiency Mode.
+The file name decides the mode. If it contains `Setup`, the program installs itself: it copies itself as `GRW-Efficiency-Mode.exe` and creates the shortcuts. Any other name launches the game and applies Efficiency Mode.
 
 The app only uses public Windows APIs. It runs `SetProcessInformation` with `ProcessPowerThrottling` to turn EcoQoS on, then resets it so Windows decides again.
 
