@@ -394,7 +394,7 @@ static class Setup
     {
         string defaultDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            @"Programs\" + Program.AppName);
+            @"Programs\GRW-Efficiency-Mode");
 
         using (SetupForm form = new SetupForm(defaultDir))
         {

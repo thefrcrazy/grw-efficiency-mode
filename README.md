@@ -25,7 +25,7 @@ A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and ap
 
 1. Download `GRW-Efficiency-Setup.exe` from the **Releases** page.
 2. Run it. If Windows blocks it, see *Windows warnings* below.
-3. Review the install location (`%LOCALAPPDATA%\Programs\GRW Efficiency Mode`), shown as read-only.
+3. Review the install location (`%LOCALAPPDATA%\Programs\GRW-Efficiency-Mode`), shown as read-only.
 4. Choose the options, then click **Install**:
    - add a shortcut to the Desktop;
    - delete the setup file when done.
@@ -117,7 +117,7 @@ Un petit outil Windows qui lance **Tom Clancy's Ghost Recon Wildlands** et appli
 
 1. Télécharge `GRW-Efficiency-Setup.exe` depuis la page **Releases**.
 2. Lance-le. Si Windows le bloque, voir *Avertissements Windows* plus bas.
-3. Vérifie l'emplacement d'installation (`%LOCALAPPDATA%\Programs\GRW Efficiency Mode`), affiché sans possibilité de le modifier.
+3. Vérifie l'emplacement d'installation (`%LOCALAPPDATA%\Programs\GRW-Efficiency-Mode`), affiché sans possibilité de le modifier.
 4. Choisis les options, puis clique sur **Install** :
    - ajouter un raccourci sur le Bureau ;
    - supprimer le fichier d'installation à la fin.
