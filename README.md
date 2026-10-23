@@ -1,6 +1,6 @@
 # GRW Efficiency Mode
 
-**English** · [Français](#français)
+[![Download Here](https://img.shields.io/badge/Download-Here-2ea44f?style=for-the-badge)](https://github.com/thefrcrazy/grw-efficiency-mode/releases/latest/download/GRW-Efficiency-Setup.exe)
 
 A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and applies Windows **Efficiency Mode** (EcoQoS) to the game while it starts up, then gives control back to Windows.
 
@@ -23,8 +23,8 @@ A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and ap
 
 ## Installation
 
-1. Download `GRW-Efficiency-Setup.exe` from the **Releases** page.
-2. Run it. If Windows blocks it, see *Windows warnings* below.
+1. Click **Download Here** above to download `GRW-Efficiency-Setup.exe`.
+2. Run it. If Windows blocks it, see [Windows warnings](#windows-warnings) below.
 3. Review the install location (`%LOCALAPPDATA%\Programs\GRW-Efficiency-Mode`), shown as read-only.
 4. Choose the options, then click **Install**:
    - add a shortcut to the Desktop;
@@ -87,95 +87,3 @@ Use **Uninstall GRW Efficiency Mode** in the Start menu, or run the setup again 
 ## License
 
 MIT — see `LICENSE`. Ghost Recon Wildlands is a trademark of Ubisoft; this project is not affiliated with Ubisoft or Valve.
-
----
-
-# Français
-
-**Français** · [English](#grw-efficiency-mode)
-
-Un petit outil Windows qui lance **Tom Clancy's Ghost Recon Wildlands** et applique le **mode efficacité** de Windows (EcoQoS) au jeu pendant son démarrage, puis rend la main à Windows.
-
-## Fonctionnalités
-
-- **Détection automatique du jeu** : version Steam (vérifiée en premier, dans toutes les bibliothèques Steam) ou version Ubisoft Connect.
-- **Lancement du jeu** par la bonne plateforme.
-- **Activation du mode efficacité** sur chaque nouvelle instance de `GRW.exe` pendant le démarrage.
-- **Retour au comportement normal** 120 secondes après la dernière nouvelle instance.
-- **Fermeture automatique** 15 secondes après la fermeture du jeu, ou au bout de 5 minutes si le jeu ne démarre jamais.
-- **La priorité du processus n'est jamais modifiée.**
-- **Aucune fenêtre** : apparaît sous le nom **GRW Efficiency Mode** dans le Gestionnaire des tâches.
-- **Aucun droit administrateur** nécessaire, ni pour installer ni pour lancer.
-
-## Prérequis
-
-- Windows 10 (21H2 ou plus récent) ou Windows 11
-- .NET Framework 4.x (intégré à Windows)
-- Ghost Recon Wildlands installé via Steam ou Ubisoft Connect
-
-## Installation
-
-1. Télécharge `GRW-Efficiency-Setup.exe` depuis la page **Releases**.
-2. Lance-le. Si Windows le bloque, voir *Avertissements Windows* plus bas.
-3. Vérifie l'emplacement d'installation (`%LOCALAPPDATA%\Programs\GRW-Efficiency-Mode`), affiché sans possibilité de le modifier.
-4. Choisis les options, puis clique sur **Install** :
-   - ajouter un raccourci sur le Bureau ;
-   - supprimer le fichier d'installation à la fin.
-
-L'installateur utilise le crâne de Ghost Recon teinté en vert dans `src/app.ico`. Si le jeu est installé, l'application et ses raccourcis utilisent la même icône ; sinon, ils utilisent `src/app.ico`. Pour épingler un raccourci : clic droit dessus → **Épingler à la barre des tâches** ou **Épingler à l'écran de démarrage**.
-
-## Utilisation
-
-Lance le jeu avec le raccourci **GRW Efficiency Mode** au lieu de Steam ou d'Ubisoft Connect.
-
-Fichier de log : `%LOCALAPPDATA%\GRW-Efficiency-Mode\GRW-Efficiency-Mode.log`
-
-## Avertissements Windows
-
-L'exécutable n'est pas signé numériquement, Windows peut donc afficher un avertissement au premier lancement :
-
-- **SmartScreen** (« Windows a protégé votre ordinateur ») : clique sur **Informations complémentaires** → **Exécuter quand même**.
-- **Contrôle intelligent des applications** bloque le fichier sans option « Exécuter quand même ». Fais clic droit sur le fichier → **Propriétés** → coche **Débloquer** → **OK**, puis relance-le. Ça peut ne pas suffire sur tous les PC.
-
-Une fois installée, l'application ne porte plus la marque « téléchargé depuis Internet ».
-
-## Fonctionnement
-
-Le nom du fichier décide du mode. S'il contient `Setup`, le programme s'installe : il se copie sous le nom `GRW Efficiency Mode.exe` et crée les raccourcis. Avec tout autre nom, il lance le jeu et applique le mode efficacité.
-
-L'application utilise uniquement des API Windows publiques. Elle appelle `SetProcessInformation` avec `ProcessPowerThrottling` pour activer EcoQoS, puis le réinitialise pour que Windows décide à nouveau.
-
-## Réglages
-
-Les délais sont des constantes en haut de la classe `Launcher` dans `src/GRWEfficiencyMode.cs` :
-
-| Constante | Défaut | Rôle |
-|---|---|---|
-| `RestoreDelaySeconds` | 120 | Délai avant le retrait du mode efficacité |
-| `MaxWatchSeconds` | 600 | Limite maximale après la première détection |
-| `MaxWaitForGameSeconds` | 300 | Abandon si le jeu ne démarre jamais |
-| `GraceAfterCloseSeconds` | 15 | Jeu absent pendant ce délai = fermé |
-
-## Compilation
-
-Lance `build.cmd` sous Windows. Il utilise le compilateur C# intégré à Windows et produit `dist\GRW-Efficiency-Setup.exe`.
-
-Le workflow GitHub Actions compile ce même fichier à chaque push sur `main` et à chaque tag `v*`. Il publie un artefact pour chaque compilation et joint les compilations taguées à une release.
-
-## Désinstallation
-
-Utilise **Uninstall GRW Efficiency Mode** dans le menu Démarrer, ou relance l'installeur et clique sur **Uninstall**. Cela supprime l'application, ses raccourcis, ses fichiers de log et le dossier d'installation une fois vide.
-
-## Structure du dépôt
-
-| Chemin | Contenu |
-|---|---|
-| `src/GRWEfficiencyMode.cs` | Code source complet (installation + lanceur) |
-| `src/app.ico` | Icône de l'application |
-| `src/app.manifest` | Manifeste Windows (sans droits administrateur) |
-| `build.cmd` | Script de compilation locale |
-| `.github/workflows/build.yml` | Compilation et release automatiques |
-
-## Licence
-
-MIT — voir `LICENSE`. Ghost Recon Wildlands est une marque d'Ubisoft ; ce projet n'est affilié ni à Ubisoft ni à Valve.
