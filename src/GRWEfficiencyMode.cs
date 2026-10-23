@@ -706,6 +706,7 @@ static class Setup
             ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", command);
             psi.CreateNoWindow = true;
             psi.UseShellExecute = false;
+            psi.WorkingDirectory = Path.GetTempPath();
             Process.Start(psi);
             return true;
         }

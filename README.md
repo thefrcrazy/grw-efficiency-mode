@@ -68,7 +68,7 @@ The timings are constants at the top of the `Launcher` class in `src/GRWEfficien
 
 Run `build.cmd` on Windows. It uses the C# compiler built into Windows and writes `dist\GRW-Efficiency-Mode-Setup.exe`.
 
-The GitHub Actions workflow builds the same file on every `v*` tag and attaches it to a release.
+The GitHub Actions workflow builds the same file on every push to `main` and `v*` tag. It uploads an artifact for each build and attaches tagged builds to a release.
 
 ## Uninstall
 
@@ -160,7 +160,7 @@ Les délais sont des constantes en haut de la classe `Launcher` dans `src/GRWEff
 
 Lance `build.cmd` sous Windows. Il utilise le compilateur C# intégré à Windows et produit `dist\GRW-Efficiency-Mode-Setup.exe`.
 
-Le workflow GitHub Actions compile ce même fichier à chaque tag `v*` et le joint à une release.
+Le workflow GitHub Actions compile ce même fichier à chaque push sur `main` et à chaque tag `v*`. Il publie un artefact pour chaque compilation et joint les compilations taguées à une release.
 
 ## Désinstallation
 
