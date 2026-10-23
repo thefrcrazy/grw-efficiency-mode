@@ -15,8 +15,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -362,8 +365,30 @@ static class Launcher
 // =====================================================================
 static class Setup
 {
+    const ushort IconResourceType = 3;
+    const ushort IconGroupResourceType = 14;
+    const ushort IconGroupResourceId = 32512;
+    const ushort FirstIconResourceId = 60000;
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern bool DeleteFile(string path);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern IntPtr BeginUpdateResource(string fileName, bool deleteExistingResources);
+
+    [DllImport("kernel32.dll", EntryPoint = "UpdateResourceW", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern bool UpdateResource(IntPtr update, IntPtr type, IntPtr name, ushort language,
+        byte[] data, uint dataSize);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool EndUpdateResource(IntPtr update, bool discard);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    static extern uint PrivateExtractIcons(string file, int index, int cx, int cy,
+        IntPtr[] icons, uint[] ids, uint count, uint flags);
+
+    [DllImport("user32.dll")]
+    static extern bool DestroyIcon(IntPtr handle);
 
     public static void Run()
     {
@@ -387,7 +412,7 @@ static class Setup
             catch (Exception ex)
             {
                 MessageBox.Show("Installation failed:\n\n" + ex.Message +
-                    "\n\nPick a folder you own (the default one never needs administrator rights).",
+                    "\n\nCheck that you can write to the install location.",
                     Program.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -420,6 +445,15 @@ static class Setup
         DeleteFile(target + ":Zone.Identifier");
 
         string iconLocation = target + ",0";
+        string gameExe = Game.FindExecutable();
+        if (gameExe != null)
+        {
+            string ico = Path.Combine(dir, "GRW Efficiency Mode.ico");
+            WriteGameIcon(gameExe, ico);
+            UpdateExecutableIcon(target, ico);
+            iconLocation = ico + ",0";
+        }
+
         CreateShortcut(Path.Combine(dir, Program.AppName + ".lnk"), target, dir, iconLocation, null);
         if (desktopShortcut)
         {
@@ -460,6 +494,132 @@ static class Setup
         finally { Marshal.FinalReleaseComObject(shell); }
     }
 
+    static void UpdateExecutableIcon(string exePath, string icoPath)
+    {
+        byte[] ico = File.ReadAllBytes(icoPath);
+        if (ico.Length < 6 || BitConverter.ToUInt16(ico, 0) != 0 ||
+            BitConverter.ToUInt16(ico, 2) != 1)
+            throw new InvalidDataException("The extracted game icon is not a valid .ico file.");
+
+        ushort count = BitConverter.ToUInt16(ico, 4);
+        if (count == 0 || count > ushort.MaxValue - FirstIconResourceId + 1 ||
+            ico.Length < 6 + 16 * count)
+            throw new InvalidDataException("The extracted game icon has an invalid image table.");
+
+        IntPtr update = BeginUpdateResource(exePath, false);
+        if (update == IntPtr.Zero)
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not open the installed app to update its icon.");
+
+        try
+        {
+            byte[] groupIcon = new byte[6 + 14 * count];
+            Array.Copy(ico, 0, groupIcon, 0, 4);
+            Array.Copy(BitConverter.GetBytes(count), 0, groupIcon, 4, 2);
+
+            for (int i = 0; i < count; i++)
+            {
+                int entry = 6 + 16 * i;
+                uint imageSize = BitConverter.ToUInt32(ico, entry + 8);
+                uint imageOffset = BitConverter.ToUInt32(ico, entry + 12);
+                if (imageOffset > ico.Length || imageSize > ico.Length - imageOffset)
+                    throw new InvalidDataException("The extracted game icon contains an invalid image.");
+
+                ushort resourceId = (ushort)(FirstIconResourceId + i);
+                byte[] image = new byte[imageSize];
+                Array.Copy(ico, (int)imageOffset, image, 0, image.Length);
+                if (!UpdateResource(update, new IntPtr(IconResourceType), new IntPtr(resourceId),
+                    0, image, (uint)image.Length))
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not write an icon image to the installed app.");
+
+                int groupEntry = 6 + 14 * i;
+                Array.Copy(ico, entry, groupIcon, groupEntry, 8);
+                Array.Copy(BitConverter.GetBytes(imageSize), 0, groupIcon, groupEntry + 8, 4);
+                Array.Copy(BitConverter.GetBytes(resourceId), 0, groupIcon, groupEntry + 12, 2);
+            }
+
+            if (!UpdateResource(update, new IntPtr(IconGroupResourceType),
+                new IntPtr(IconGroupResourceId), 0, groupIcon, (uint)groupIcon.Length))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not set the installed app icon.");
+
+            IntPtr completedUpdate = update;
+            update = IntPtr.Zero;
+            if (!EndUpdateResource(completedUpdate, false))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not save the installed app icon.");
+        }
+        finally
+        {
+            if (update != IntPtr.Zero) EndUpdateResource(update, true);
+        }
+    }
+
+    static void WriteGameIcon(string sourceExe, string outIco)
+    {
+        Bitmap source;
+        IntPtr[] handles = new IntPtr[1];
+        uint[] ids = new uint[1];
+        if (PrivateExtractIcons(sourceExe, 0, 256, 256, handles, ids, 1, 0) >= 1 &&
+            handles[0] != IntPtr.Zero)
+        {
+            try
+            {
+                using (Icon tmp = Icon.FromHandle(handles[0])) source = tmp.ToBitmap();
+            }
+            finally { DestroyIcon(handles[0]); }
+        }
+        else
+        {
+            using (Icon tmp = Icon.ExtractAssociatedIcon(sourceExe))
+            {
+                if (tmp == null) throw new InvalidOperationException("Could not extract the Ghost Recon icon.");
+                source = tmp.ToBitmap();
+            }
+        }
+
+        int[] sizes = { 256, 48, 32, 16 };
+        List<byte[]> images = new List<byte[]>();
+        using (source)
+        {
+            foreach (int size in sizes)
+            {
+                using (Bitmap bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb))
+                {
+                    using (Graphics gfx = Graphics.FromImage(bmp))
+                    {
+                        gfx.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                        gfx.SmoothingMode = SmoothingMode.HighQuality;
+                        gfx.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                        gfx.Clear(Color.Transparent);
+                        gfx.DrawImage(source, new Rectangle(0, 0, size, size),
+                            0, 0, source.Width, source.Height, GraphicsUnit.Pixel);
+                    }
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        bmp.Save(ms, ImageFormat.Png);
+                        images.Add(ms.ToArray());
+                    }
+                }
+            }
+        }
+
+        using (FileStream fs = File.Create(outIco))
+        using (BinaryWriter writer = new BinaryWriter(fs))
+        {
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)images.Count);
+            int offset = 6 + 16 * images.Count;
+            for (int i = 0; i < images.Count; i++)
+            {
+                byte dim = (byte)(sizes[i] >= 256 ? 0 : sizes[i]);
+                writer.Write(dim); writer.Write(dim); writer.Write((byte)0); writer.Write((byte)0);
+                writer.Write((ushort)1); writer.Write((ushort)32);
+                writer.Write((uint)images[i].Length); writer.Write((uint)offset);
+                offset += images[i].Length;
+            }
+            foreach (byte[] image in images) writer.Write(image);
+        }
+    }
+
     static bool ScheduleSelfDelete()
     {
         try
@@ -497,8 +657,9 @@ static class Setup
             if (Directory.Exists(logDir)) Directory.Delete(logDir, true);
 
             string exePath = Path.Combine(installDir, Program.AppName + ".exe");
+            string shortcutPath = Path.Combine(installDir, Program.AppName + ".lnk");
             string icoPath = Path.Combine(installDir, "GRW Efficiency Mode.ico");
-            if (!ScheduleUninstallCleanup(exePath, icoPath, installDir))
+            if (!ScheduleUninstallCleanup(exePath, shortcutPath, icoPath, installDir))
                 throw new IOException("Windows could not schedule the installed files for deletion.");
 
             MessageBox.Show("GRW Efficiency Mode has been uninstalled.",
@@ -516,11 +677,12 @@ static class Setup
         if (File.Exists(path)) File.Delete(path);
     }
 
-    static bool ScheduleUninstallCleanup(string exePath, string icoPath, string installDir)
+    static bool ScheduleUninstallCleanup(string exePath, string shortcutPath, string icoPath, string installDir)
     {
         try
         {
             string command = "/c ping 127.0.0.1 -n 2 >nul & del /f /q \"" + exePath +
+                "\" >nul 2>&1 & del /f /q \"" + shortcutPath +
                 "\" >nul 2>&1 & del /f /q \"" + icoPath +
                 "\" >nul 2>&1 & rmdir \"" + installDir + "\" >nul 2>&1";
             ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", command);
@@ -539,16 +701,18 @@ static class Setup
 class SetupForm : Form
 {
     readonly TextBox txtDir = new TextBox();
+    readonly string installDir;
     readonly CheckBox cbDesktop = new CheckBox();
     readonly CheckBox cbDelete = new CheckBox();
     readonly Button btnUninstall = new Button();
 
-    public string InstallDir { get { return txtDir.Text.Trim().TrimEnd('\\'); } }
+    public string InstallDir { get { return installDir; } }
     public bool DesktopShortcut { get { return cbDesktop.Checked; } }
     public bool DeleteInstaller { get { return cbDelete.Checked; } }
 
     public SetupForm(string defaultDir)
     {
+        installDir = defaultDir;
         Text = Program.AppName + " - setup";
         ClientSize = new Size(460, 190);
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -558,25 +722,12 @@ class SetupForm : Form
         try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
         Label lblDir = new Label();
-        lblDir.Text = "Install folder:";
+        lblDir.Text = "Install location:";
         lblDir.SetBounds(15, 15, 430, 18);
 
         txtDir.Text = defaultDir;
-        txtDir.SetBounds(15, 36, 340, 24);
-
-        Button btnBrowse = new Button();
-        btnBrowse.Text = "Browse...";
-        btnBrowse.SetBounds(362, 34, 85, 26);
-        btnBrowse.Click += delegate
-        {
-            using (FolderBrowserDialog fb = new FolderBrowserDialog())
-            {
-                fb.Description = "Where should " + Program.AppName + " be installed?";
-                fb.ShowNewFolderButton = true;
-                if (fb.ShowDialog(this) == DialogResult.OK)
-                    txtDir.Text = Path.Combine(fb.SelectedPath, Program.AppName);
-            }
-        };
+        txtDir.ReadOnly = true;
+        txtDir.SetBounds(15, 36, 430, 24);
 
         Label lblOpt = new Label();
         lblOpt.Text = "A shortcut is always created in this folder. Also:";
@@ -605,19 +756,9 @@ class SetupForm : Form
         btnCancel.SetBounds(362, 152, 85, 28);
         btnCancel.DialogResult = DialogResult.Cancel;
 
-        Controls.AddRange(new Control[] { lblDir, txtDir, btnBrowse, lblOpt, cbDesktop, cbDelete,
+        Controls.AddRange(new Control[] { lblDir, txtDir, lblOpt, cbDesktop, cbDelete,
             btnUninstall, btnOk, btnCancel });
         AcceptButton = btnOk;
         CancelButton = btnCancel;
-
-        FormClosing += delegate(object sender, FormClosingEventArgs e)
-        {
-            if (DialogResult == DialogResult.OK && InstallDir.Length == 0)
-            {
-                MessageBox.Show(this, "Please choose an install folder.", Program.AppName,
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                e.Cancel = true;
-            }
-        };
     }
 }

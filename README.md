@@ -25,12 +25,12 @@ A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and ap
 
 1. Download `GRW-Efficiency-Mode-Setup.exe` from the **Releases** page.
 2. Run it. If Windows blocks it, see *Windows warnings* below.
-3. Choose the install folder (default: `%LOCALAPPDATA%\Programs\GRW Efficiency Mode`).
+3. Review the install location (`%LOCALAPPDATA%\Programs\GRW Efficiency Mode`), shown as read-only.
 4. Choose the options, then click **Install**:
    - add a shortcut to the Desktop;
    - delete the setup file when done.
 
-The installer, installed app, and shortcuts all use the green icon in `src/app.ico`. To pin a shortcut: right-click it → **Pin to taskbar** or **Pin to Start**.
+The installer uses `src/app.ico`. When the game is installed, the installed app and its shortcuts use the game's icon; otherwise they use `src/app.ico`. To pin a shortcut: right-click it → **Pin to taskbar** or **Pin to Start**.
 
 ## Usage
 
@@ -72,7 +72,7 @@ The GitHub Actions workflow builds the same file on every `v*` tag and attaches 
 
 ## Uninstall
 
-Use **Uninstall GRW Efficiency Mode** in the Start menu, or run the setup again and click **Uninstall**. This removes the app, its shortcuts and its log files.
+Use **Uninstall GRW Efficiency Mode** in the Start menu, or run the setup again and click **Uninstall**. This removes the app, its shortcuts, its log files, and the now-empty install folder.
 
 ## Repository layout
 
@@ -117,12 +117,12 @@ Un petit outil Windows qui lance **Tom Clancy's Ghost Recon Wildlands** et appli
 
 1. Télécharge `GRW-Efficiency-Mode-Setup.exe` depuis la page **Releases**.
 2. Lance-le. Si Windows le bloque, voir *Avertissements Windows* plus bas.
-3. Choisis le dossier d'installation (par défaut : `%LOCALAPPDATA%\Programs\GRW Efficiency Mode`).
+3. Vérifie l'emplacement d'installation (`%LOCALAPPDATA%\Programs\GRW Efficiency Mode`), affiché sans possibilité de le modifier.
 4. Choisis les options, puis clique sur **Install** :
    - ajouter un raccourci sur le Bureau ;
    - supprimer le fichier d'installation à la fin.
 
-L'installateur, l'application installée et les raccourcis utilisent tous l'icône verte de `src/app.ico`. Pour épingler un raccourci : clic droit dessus → **Épingler à la barre des tâches** ou **Épingler à l'écran de démarrage**.
+L'installateur utilise `src/app.ico`. Si le jeu est installé, l'application et ses raccourcis utilisent l'icône du jeu ; sinon, ils utilisent `src/app.ico`. Pour épingler un raccourci : clic droit dessus → **Épingler à la barre des tâches** ou **Épingler à l'écran de démarrage**.
 
 ## Utilisation
 
@@ -164,7 +164,7 @@ Le workflow GitHub Actions compile ce même fichier à chaque tag `v*` et le joi
 
 ## Désinstallation
 
-Utilise **Uninstall GRW Efficiency Mode** dans le menu Démarrer, ou relance l'installeur et clique sur **Uninstall**. Cela supprime l'application, ses raccourcis et ses fichiers de log.
+Utilise **Uninstall GRW Efficiency Mode** dans le menu Démarrer, ou relance l'installeur et clique sur **Uninstall**. Cela supprime l'application, ses raccourcis, ses fichiers de log et le dossier d'installation une fois vide.
 
 ## Structure du dépôt
 
