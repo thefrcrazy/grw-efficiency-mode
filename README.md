@@ -23,7 +23,7 @@ A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and ap
 
 ## Installation
 
-1. Download `GRW-Efficiency-Mode-Setup.exe` from the **Releases** page.
+1. Download `GRW-Efficiency-Setup.exe` from the **Releases** page.
 2. Run it. If Windows blocks it, see *Windows warnings* below.
 3. Review the install location (`%LOCALAPPDATA%\Programs\GRW Efficiency Mode`), shown as read-only.
 4. Choose the options, then click **Install**:
@@ -66,7 +66,7 @@ The timings are constants at the top of the `Launcher` class in `src/GRWEfficien
 
 ## Building
 
-Run `build.cmd` on Windows. It uses the C# compiler built into Windows and writes `dist\GRW-Efficiency-Mode-Setup.exe`.
+Run `build.cmd` on Windows. It uses the C# compiler built into Windows and writes `dist\GRW-Efficiency-Setup.exe`.
 
 The GitHub Actions workflow builds the same file on every push to `main` and `v*` tag. It uploads an artifact for each build and attaches tagged builds to a release.
 
@@ -115,7 +115,7 @@ Un petit outil Windows qui lance **Tom Clancy's Ghost Recon Wildlands** et appli
 
 ## Installation
 
-1. Télécharge `GRW-Efficiency-Mode-Setup.exe` depuis la page **Releases**.
+1. Télécharge `GRW-Efficiency-Setup.exe` depuis la page **Releases**.
 2. Lance-le. Si Windows le bloque, voir *Avertissements Windows* plus bas.
 3. Vérifie l'emplacement d'installation (`%LOCALAPPDATA%\Programs\GRW Efficiency Mode`), affiché sans possibilité de le modifier.
 4. Choisis les options, puis clique sur **Install** :
@@ -158,7 +158,7 @@ Les délais sont des constantes en haut de la classe `Launcher` dans `src/GRWEff
 
 ## Compilation
 
-Lance `build.cmd` sous Windows. Il utilise le compilateur C# intégré à Windows et produit `dist\GRW-Efficiency-Mode-Setup.exe`.
+Lance `build.cmd` sous Windows. Il utilise le compilateur C# intégré à Windows et produit `dist\GRW-Efficiency-Setup.exe`.
 
 Le workflow GitHub Actions compile ce même fichier à chaque push sur `main` et à chaque tag `v*`. Il publie un artefact pour chaque compilation et joint les compilations taguées à une release.
 
