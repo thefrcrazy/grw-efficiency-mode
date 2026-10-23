@@ -30,7 +30,7 @@ A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and ap
    - add a shortcut to the Desktop;
    - delete the setup file when done.
 
-The shortcut uses the original game icon. To pin it: right-click the shortcut → **Pin to taskbar** or **Pin to Start**.
+The installer, installed app, and shortcuts all use the green icon in `src/app.ico`. To pin a shortcut: right-click it → **Pin to taskbar** or **Pin to Start**.
 
 ## Usage
 
@@ -122,7 +122,7 @@ Un petit outil Windows qui lance **Tom Clancy's Ghost Recon Wildlands** et appli
    - ajouter un raccourci sur le Bureau ;
    - supprimer le fichier d'installation à la fin.
 
-Le raccourci utilise l'icône originale du jeu. Pour l'épingler : clic droit sur le raccourci → **Épingler à la barre des tâches** ou **Épingler à l'écran de démarrage**.
+L'installateur, l'application installée et les raccourcis utilisent tous l'icône verte de `src/app.ico`. Pour épingler un raccourci : clic droit dessus → **Épingler à la barre des tâches** ou **Épingler à l'écran de démarrage**.
 
 ## Utilisation
 

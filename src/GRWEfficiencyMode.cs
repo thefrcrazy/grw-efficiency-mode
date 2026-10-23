@@ -17,8 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -367,13 +365,6 @@ static class Setup
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern bool DeleteFile(string path);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    static extern uint PrivateExtractIcons(string file, int index, int cx, int cy,
-        IntPtr[] icons, uint[] ids, uint count, uint flags);
-
-    [DllImport("user32.dll")]
-    static extern bool DestroyIcon(IntPtr handle);
-
     public static void Run()
     {
         string defaultDir = Path.Combine(
@@ -428,20 +419,7 @@ static class Setup
         // Drop the "downloaded from the Internet" mark copied along with the file
         DeleteFile(target + ":Zone.Identifier");
 
-        // Use the original game icon for shortcuts when the game is installed.
         string iconLocation = target + ",0";
-        string gameExe = Game.FindExecutable();
-        if (gameExe != null)
-        {
-            try
-            {
-                string ico = Path.Combine(dir, "GRW Efficiency Mode.ico");
-                WriteGameIcon(gameExe, ico);
-                iconLocation = ico + ",0";
-            }
-            catch { }
-        }
-
         CreateShortcut(Path.Combine(dir, Program.AppName + ".lnk"), target, dir, iconLocation, null);
         if (desktopShortcut)
         {
@@ -480,65 +458,6 @@ static class Setup
             Marshal.FinalReleaseComObject(lnk);
         }
         finally { Marshal.FinalReleaseComObject(shell); }
-    }
-
-    // Preserve the original game icon and transparency in the generated .ico.
-    static void WriteGameIcon(string sourceExe, string outIco)
-    {
-        Bitmap source;
-        IntPtr[] handles = new IntPtr[1];
-        uint[] ids = new uint[1];
-        if (PrivateExtractIcons(sourceExe, 0, 256, 256, handles, ids, 1, 0) >= 1 && handles[0] != IntPtr.Zero)
-        {
-            using (Icon tmp = Icon.FromHandle(handles[0])) source = tmp.ToBitmap();
-            DestroyIcon(handles[0]);
-        }
-        else
-        {
-            using (Icon tmp = Icon.ExtractAssociatedIcon(sourceExe)) source = tmp.ToBitmap();
-        }
-
-        int[] sizes = { 256, 48, 32, 16 };
-        List<byte[]> images = new List<byte[]>();
-        using (source)
-        {
-            foreach (int size in sizes)
-            {
-                using (Bitmap bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb))
-                {
-                    using (Graphics gfx = Graphics.FromImage(bmp))
-                    {
-                        gfx.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                        gfx.SmoothingMode = SmoothingMode.HighQuality;
-                        gfx.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                        gfx.Clear(Color.Transparent);
-                        gfx.DrawImage(source, new Rectangle(0, 0, size, size),
-                            0, 0, source.Width, source.Height, GraphicsUnit.Pixel);
-                    }
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        bmp.Save(ms, ImageFormat.Png);
-                        images.Add(ms.ToArray());
-                    }
-                }
-            }
-        }
-
-        using (FileStream fs = File.Create(outIco))
-        using (BinaryWriter w = new BinaryWriter(fs))
-        {
-            w.Write((ushort)0); w.Write((ushort)1); w.Write((ushort)images.Count);
-            int offset = 6 + 16 * images.Count;
-            for (int i = 0; i < images.Count; i++)
-            {
-                byte dim = (byte)(sizes[i] >= 256 ? 0 : sizes[i]);
-                w.Write(dim); w.Write(dim); w.Write((byte)0); w.Write((byte)0);
-                w.Write((ushort)1); w.Write((ushort)32);
-                w.Write((uint)images[i].Length); w.Write((uint)offset);
-                offset += images[i].Length;
-            }
-            foreach (byte[] img in images) w.Write(img);
-        }
     }
 
     static bool ScheduleSelfDelete()
