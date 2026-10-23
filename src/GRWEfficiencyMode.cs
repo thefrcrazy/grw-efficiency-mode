@@ -575,6 +575,8 @@ static class Setup
             }
         }
 
+        ColorizeGameIcon(source);
+
         int[] sizes = { 256, 48, 32, 16 };
         List<byte[]> images = new List<byte[]>();
         using (source)
@@ -617,6 +619,22 @@ static class Setup
                 offset += images[i].Length;
             }
             foreach (byte[] image in images) writer.Write(image);
+        }
+    }
+
+    static void ColorizeGameIcon(Bitmap image)
+    {
+        for (int y = 0; y < image.Height; y++)
+        {
+            for (int x = 0; x < image.Width; x++)
+            {
+                Color pixel = image.GetPixel(x, y);
+                int luminance = (pixel.R * 299 + pixel.G * 587 + pixel.B * 114) / 1000;
+                image.SetPixel(x, y, Color.FromArgb(pixel.A,
+                    Math.Min(255, 22 + luminance * 69 / 100),
+                    Math.Min(255, 64 + luminance * 69 / 100),
+                    Math.Min(255, 31 + luminance * 69 / 100)));
+            }
         }
     }
 
