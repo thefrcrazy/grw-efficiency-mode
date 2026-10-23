@@ -212,7 +212,7 @@ static class Launcher
                 return;
             }
 
-            try { Watch(); }
+            try { Application.Run(new WatcherTaskbarForm()); }
             catch (Exception ex) { Log("Unexpected error: " + ex.Message); }
             finally
             {
@@ -222,7 +222,7 @@ static class Launcher
         }
     }
 
-    static void Log(string message)
+    internal static void Log(string message)
     {
         try
         {
@@ -296,7 +296,7 @@ static class Launcher
         }
     }
 
-    static void Watch()
+    internal static void Watch()
     {
         Log("Watcher started. Game priority left unchanged.");
         DateTime start = DateTime.Now;
@@ -360,6 +360,60 @@ static class Launcher
             }
             Thread.Sleep(PollMilliseconds);
         }
+    }
+}
+
+class WatcherTaskbarForm : Form
+{
+    bool watcherStopped;
+
+    public WatcherTaskbarForm()
+    {
+        Text = Program.AppName;
+        ShowInTaskbar = true;
+        ShowIcon = true;
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+        WindowState = FormWindowState.Minimized;
+        Shown += StartWatcher;
+        Activated += MinimizeWhenActivated;
+        FormClosing += HandleFormClosing;
+    }
+
+    void MinimizeWhenActivated(object sender, EventArgs e)
+    {
+        if (WindowState != FormWindowState.Minimized)
+            WindowState = FormWindowState.Minimized;
+    }
+
+    void StartWatcher(object sender, EventArgs e)
+    {
+        Thread watcher = new Thread(WatchInBackground);
+        watcher.IsBackground = true;
+        watcher.Start();
+    }
+
+    void WatchInBackground()
+    {
+        try { Launcher.Watch(); }
+        catch (Exception ex) { Launcher.Log("Unexpected error: " + ex.Message); }
+        finally
+        {
+            try
+            {
+                BeginInvoke((MethodInvoker)delegate
+                {
+                    watcherStopped = true;
+                    Close();
+                });
+            }
+            catch (InvalidOperationException) { }
+        }
+    }
+
+    void HandleFormClosing(object sender, FormClosingEventArgs e)
+    {
+        if (!watcherStopped && e.CloseReason == CloseReason.UserClosing)
+            e.Cancel = true;
     }
 }
 
