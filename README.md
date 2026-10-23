@@ -1,6 +1,8 @@
 # GRW Efficiency Mode
 
-[![Direct Download](https://img.shields.io/badge/Direct-Download-2ea44f?style=for-the-badge)](https://github.com/thefrcrazy/grw-efficiency-mode/releases/latest/download/GRW-Efficiency-Setup.exe) 👉 https://github.com/thefrcrazy/grw-efficiency-mode/releases/latest/download/GRW-Efficiency-Setup.exe
+[![Direct Download](https://img.shields.io/badge/Direct-Download-2ea44f?style=for-the-badge)](https://github.com/thefrcrazy/grw-efficiency-mode/releases/latest/download/GRW-Efficiency-Setup.exe)
+
+👉 https://github.com/thefrcrazy/grw-efficiency-mode/releases/latest/download/GRW-Efficiency-Setup.exe
 
 A small Windows tool that launches **Tom Clancy's Ghost Recon Wildlands** and applies Windows **Efficiency Mode** (EcoQoS) to the game while it starts up, then gives control back to Windows.
 
